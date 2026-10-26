@@ -1,0 +1,87 @@
+name: Deploy frontend to VPS
+
+# Dispara el despliegue automáticamente al hacer push a master
+# o manualmente desde la pestaña Actions de GitHub.
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+# Evita que dos despliegues se ejecuten al mismo tiempo.
+concurrency:
+  group: deploy-frontend-vps
+  cancel-in-progress: false
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
+  # Ruta en el VPS donde se sincronizará la carpeta dist/ (ej. /var/www/tenderfront).
+  VPS_PATH_FRONT: ${{ secrets.VPS_PATH_FRONT }}
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      # Instala las dependencias exactas del lockfile para builds reproducibles.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Verifica calidad antes de construir.
+      - name: Lint and type-check
+        run: |
+          pnpm lint
+          pnpm type-check
+
+      # Construye la aplicación para producción.
+      # El frontend y el backend están en dominios separados, por lo que
+      # VITE_API_BASE_URL debe ser la URL completa del backend.
+      # Puedes sobrescribir este valor desde GitHub Variables (vars.VITE_API_BASE_URL).
+      - name: Build for production
+        run: pnpm build-only
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://tenders-api.duckdns.org/api/v1' }}
+
+      # Configura la llave SSH usada para conectar con el VPS.
+      - name: Set up the SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/tenders_deploy
+          chmod 600 ~/.ssh/tenders_deploy
+
+      # Sincroniza solo la carpeta dist/ al VPS, eliminando archivos obsoletos.
+      - name: Sync dist to the VPS
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/tenders_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
+            dist/ "${VPS_USER}@${VPS_HOST}:${VPS_PATH_FRONT}/"
+
+      # Verifica que el frontend esté respondiendo públicamente.
+      - name: Verify the public endpoint
+        run: |
+          for attempt in 1 2 3; do
+            if curl -fsS --max-time 20 "https://${VPS_HOST}/" >/dev/null; then
+              echo "Frontend responded correctly at https://${VPS_HOST}/"
+              exit 0
+            fi
+            echo "Attempt ${attempt}: the public endpoint did not respond yet, retrying in 5 seconds..."
+            sleep 5
+          done
+          echo "The public endpoint did not respond. Review the web server and TLS setup."
+          exit 1

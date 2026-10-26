@@ -1,0 +1,64 @@
+/* Variables de diseño y estilos base de la aplicación */
+
+/* Paleta de colores y configuración tipográfica base */
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --brand-dark: #283355;
+  --brand-accent: #547bb9;
+  --brand-accent-hover: #456ba1;
+  --brand-text: #4f4e4f;
+  --brand-bg: #ffffff;
+  --brand-surface: #f5f7fa;
+  --brand-border: #e4e7ec;
+}
+
+/* Box-sizing global para simplificar el cálculo de dimensiones */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* HTML y body con ancho mínimo para móviles y fondo neutro */
+html {
+  min-width: 320px;
+  background: #f3f6fa;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--brand-text);
+  background: var(--brand-bg);
+  line-height: 1.55;
+}
+
+/* Hereda la tipografía del body en controles de formulario */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Color de enlaces con estado hover */
+a {
+  color: var(--brand-accent);
+}
+
+a:hover {
+  color: var(--brand-accent-hover);
+}
+
+/* Estilo de foco visible accesible para navegación por teclado */
+:focus-visible {
+  outline: 3px solid rgba(23, 92, 211, 0.35);
+  outline-offset: 2px;
+}
