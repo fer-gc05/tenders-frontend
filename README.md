@@ -1,42 +1,117 @@
-# tenderFront
+# TenderFront
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend del módulo de licitaciones/ofertas. Permite crear, editar, listar, consultar y exportar ofertas con sus documentos asociados, consumiendo la API REST del backend.
 
-## Recommended IDE Setup
+## URL de producción
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Frontend:** https://tenders-dev.duckdns.org/
+- **Backend:** https://tenders-api.duckdns.org/api/v1
 
-## Recommended Browser Setup
+## Stack tecnológico
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- [Vue 3](https://vuejs.org/) con Composition API
+- [Vue Router](https://router.vuejs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vitejs.dev/)
+- [Axios](https://axios-http.com/)
+- [Bootstrap 5.3](https://getbootstrap.com/)
 
-## Type Support for `.vue` Imports in TS
+## Requisitos
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+- Node.js `^22.18.0 || >=24.12.0`
+- pnpm `9.x`
 
-## Customize configuration
+## Configuración local
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+1. Clona el repositorio.
+2. Copia el archivo de variables de entorno:
 
-## Project Setup
+   ```bash
+   cp .env.example .env
+   ```
 
-```sh
-pnpm install
+3. Instala las dependencias:
+
+   ```bash
+   pnpm install
+   ```
+
+## Scripts disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm dev` | Servidor de desarrollo con hot reload |
+| `pnpm build` | Type-check y build de producción |
+| `pnpm build-only` | Build de producción sin type-check |
+| `pnpm type-check` | Verificación de tipos con `vue-tsc` |
+| `pnpm lint` | Linter con ESLint |
+| `pnpm test` | Ejecuta las pruebas con Vitest |
+| `pnpm test:coverage` | Ejecuta las pruebas con cobertura |
+
+## Variables de entorno
+
+| Variable | Descripción | Ejemplo desarrollo | Ejemplo producción |
+|----------|-------------|--------------------|--------------------|
+| `VITE_API_BASE_URL` | URL base de la API | `/api/v1` | `https://tenders-api.duckdns.org/api/v1` |
+| `VITE_API_PROXY_TARGET` | Destino del proxy de Vite en desarrollo | `https://tenders-api.duckdns.org` | No aplica |
+
+## Estructura del proyecto
+
+```
+src/
+├── api/                    # Cliente HTTP (Axios)
+├── assets/                 # Estilos globales
+├── layouts/                # Layout principal
+├── modules/tenders/        # Módulo de licitaciones
+│   ├── components/         # Componentes reutilizables
+│   ├── composables/        # Lógica reutilizable (composables)
+│   ├── services/           # Llamadas a la API
+│   ├── types/              # Tipos de TypeScript
+│   ├── utils/              # Utilidades de formateo
+│   ├── validation/         # Validaciones de formularios
+│   └── views/              # Vistas de páginas
+├── router/                 # Configuración de rutas
+├── App.vue                 # Componente raíz
+└── main.ts                 # Punto de entrada
 ```
 
-### Compile and Hot-Reload for Development
+## Despliegue
 
-```sh
-pnpm dev
+El despliegue es automático mediante GitHub Actions (`.github/workflows/deploy.yml`):
+
+1. Se ejecuta `lint` y `type-check`.
+2. Se construye la aplicación con `VITE_API_BASE_URL` apuntando a la API de producción.
+3. Se sincroniza la carpeta `dist/` al VPS mediante `rsync`.
+4. Se verifica que el dominio responda con `HTTP 200`.
+
+### Secrets requeridos en GitHub
+
+| Secret | Descripción |
+|--------|-------------|
+| `VPS_HOST` | Dominio del VPS (`tenders-dev.duckdns.org`) |
+| `VPS_USER` | Usuario SSH del VPS |
+| `SSH_DEPLOY_KEY` | Llave SSH privada para conexión al VPS |
+| `VPS_PATH_FRONT` | Ruta en el VPS donde se sirve el frontend (`/var/www/tenderfront/`) |
+
+### Configuración del servidor (Nginx)
+
+En el VPS se sirve la carpeta `dist/` con Nginx. Un ejemplo de configuración está en `deploy/nginx-tenderfront.conf`.
+
+Puntos clave:
+
+- El `root` debe apuntar a `/var/www/tenderfront`.
+- La SPA requiere `try_files $uri $uri/ /index.html;`.
+- Los assets con hash deben tener cache largo.
+- El certificado SSL se gestiona con Let's Encrypt/Certbot.
+
+## Integración con el backend
+
+El frontend espera que el backend permita CORS desde el dominio de producción. En el `.env` del backend:
+
+```env
+CORS_ALLOWED_ORIGIN=https://tenders-dev.duckdns.org
 ```
 
-### Type-Check, Compile and Minify for Production
+## Licencia
 
-```sh
-pnpm build
-```
+Privado. Uso exclusivo del proyecto.
